@@ -1,5 +1,5 @@
 #!/user/bin/env/ bash
-nohup  python -u  new_main.py \
+nohup  python3 -u  new_main.py \
  --data=Games \
  --gpu=3 \
  --epoch=20 \
