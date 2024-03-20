@@ -1,5 +1,5 @@
 #!/user/bin/env/ bash
- nohup  python -u  new_main.py \
+ nohup  python3 -u  new_main.py \
  --data=Beauty \
  --gpu=0 \
  --epoch=20 \
