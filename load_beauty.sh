@@ -4,6 +4,6 @@ nohup  python3 -u  new_data.py \
  --job=10 \
  --item_max_length=50 \
  --user_max_length=50 \
- --k_hop=3 \
+ --k_hop=2 \
  >./results/be_data&
 
