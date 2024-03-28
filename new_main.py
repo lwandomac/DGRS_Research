@@ -7,7 +7,6 @@
 
 import datetime
 import torch
-from sys import exit
 import pandas as pd
 import numpy as np
 from DGSR import DGSR, collate, collate_test
@@ -52,8 +51,7 @@ parser.add_argument("--model_record", action='store_true', default=False, help='
 
 opt = parser.parse_args()
 args, extras = parser.parse_known_args()
-os.environ["CUDA_VISIBLE_DEVICES"] = opt.gpu
-device = torch.device('cuda:0')
+
 print(opt)
 
 if opt.record:
@@ -63,6 +61,7 @@ if opt.record:
     mkdir_if_not_exist(log_file)
     sys.stdout = Logger(log_file)
     print(f'Logging to {log_file}')
+
 if opt.model_record:
     model_file = f'{opt.data}_ba_{opt.batchSize}_G_{opt.gpu}_dim_{opt.hidden_size}_ulong_{opt.user_long}_ilong_{opt.item_long}_' \
                f'US_{opt.user_short}_IS_{opt.item_short}_La_{args.last_item}_UM_{opt.user_max_length}_IM_{opt.item_max_length}_K_{opt.k_hop}' \
@@ -87,22 +86,23 @@ print('test number:', test_set.size)
 print('user number:', user_num)
 print('item number:', item_num)
 f = open(opt.data+'_neg', 'rb')
-data_neg = pickle.load(f) # 用于评估测试集
+data_neg = pickle.load(f) #used for evaluating the test set
 train_data = DataLoader(dataset=train_set, batch_size=opt.batchSize, collate_fn=collate, shuffle=True, pin_memory=True, num_workers=12)
 test_data = DataLoader(dataset=test_set, batch_size=opt.batchSize, collate_fn=lambda x: collate_test(x, data_neg), pin_memory=True, num_workers=8)
 if opt.val:
     val_data = DataLoader(dataset=val_set, batch_size=opt.batchSize, collate_fn=lambda x: collate_test(x, data_neg), pin_memory=True, num_workers=2)
 
-# 初始化模型
+# initialize the model
 model = DGSR(user_num=user_num, item_num=item_num, input_dim=opt.hidden_size, item_max_length=opt.item_max_length,
              user_max_length=opt.user_max_length, feat_drop=opt.feat_drop, attn_drop=opt.attn_drop, user_long=opt.user_long, user_short=opt.user_short,
              item_long=opt.item_long, item_short=opt.item_short, user_update=opt.user_update, item_update=opt.item_update, last_item=opt.last_item,
-             layer_num=opt.layer_num).cuda()
+             layer_num=opt.layer_num)
 optimizer = optim.Adam(model.parameters(), lr=opt.lr, weight_decay=opt.l2)
 loss_func = nn.CrossEntropyLoss()
 best_result = [0, 0, 0, 0, 0, 0]   # hit5,hit10,hit20,mrr5,mrr10,mrr20
 best_epoch = [0, 0, 0, 0, 0, 0]
 stop_num = 0
+
 for epoch in range(opt.epoch):
     stop = True
     epoch_loss = 0
@@ -111,8 +111,8 @@ for epoch in range(opt.epoch):
     model.train()
     for user, batch_graph, label, last_item in train_data:
         iter += 1
-        score = model(batch_graph.to(device), user.to(device), last_item.to(device), is_training=True)
-        loss = loss_func(score, label.to(device))
+        score = model(batch_graph, user, last_item, is_training=True)
+        loss = loss_func(score, label)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -127,10 +127,10 @@ for epoch in range(opt.epoch):
     if opt.val:
         print('start validation: ', datetime.datetime.now())
         val_loss_all, top_val = [], []
-        with torch.no_grad:
+        with torch.no_grad():
             for user, batch_graph, label, last_item, neg_tar in val_data:
-                score, top = model(batch_graph.to(device), user.to(device), last_item.to(device), neg_tar=torch.cat([label.unsqueeze(1), neg_tar], -1).to(device), is_training=False)
-                val_loss = loss_func(score, label.cuda())
+                score, top = model(batch_graph, user, last_item, neg_tar=torch.cat([label.unsqueeze(1), neg_tar], -1), is_training=False)
+                val_loss = loss_func(score, label)
                 val_loss_all.append(val_loss.append(val_loss.item()))
                 top_val.append(top.detach().cpu().numpy())
             recall5, recall10, recall20, ndgg5, ndgg10, ndgg20 = eval_metric(top_val)
@@ -146,8 +146,8 @@ for epoch in range(opt.epoch):
     with torch.no_grad():
         for user, batch_graph, label, last_item, neg_tar in test_data:
             iter+=1
-            score, top = model(batch_graph.to(device), user.to(device), last_item.to(device), neg_tar=torch.cat([label.unsqueeze(1), neg_tar],-1).to(device),  is_training=False)
-            test_loss = loss_func(score, label.cuda())
+            score, top = model(batch_graph, user, last_item, neg_tar=torch.cat([label.unsqueeze(1), neg_tar],-1),  is_training=False)
+            test_loss = loss_func(score, label)
             all_loss.append(test_loss.item())
             all_top.append(top.detach().cpu().numpy())
             all_label.append(label.numpy())
@@ -190,3 +190,4 @@ for epoch in range(opt.epoch):
               (epoch_loss, np.mean(all_loss), best_result[0], best_result[1], best_result[2], best_result[3],
                best_result[4], best_result[5], best_epoch[0], best_epoch[1],
                best_epoch[2], best_epoch[3], best_epoch[4], best_epoch[5]))
+
