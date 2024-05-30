@@ -1,10 +1,9 @@
 #!/user/bin/env/ bash
 nohup  python3 -u  new_main.py \
  --data=cd \
- --gpu=0 \
  --epoch=20 \
  --hidden_size=50 \
- --batchSize=50 \
+ --batchSize=20 \
  --user_long=orgat \
  --user_short=att \
  --item_long=orgat \
@@ -19,4 +18,4 @@ nohup  python3 -u  new_main.py \
  --attn_drop=0.3 \
  --feat_drop=0.3 \
  --record \
- >./jup&
+ >./jup_cd_output&

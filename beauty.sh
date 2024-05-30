@@ -17,7 +17,7 @@
  --user_max_length=50 \
  --record \
  --model_record \
- >./jup&
+ >./jup_beauty_output&
 
 
 

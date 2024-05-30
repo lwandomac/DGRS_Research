@@ -19,4 +19,4 @@ nohup  python3 -u  new_main.py \
  --attn_drop=0.3 \
  --feat_drop=0.3 \
  --record \
- >./jup&
+ >./jup_games_output&

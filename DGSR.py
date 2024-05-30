@@ -297,7 +297,7 @@ def collate(data):
 def neg_generate(user, data_neg, neg_num=100):
     neg = np.zeros((len(user), neg_num), np.int32)
     for i, u in enumerate(user):
-        neg[i] = np.random.choice(data_neg[u], neg_num, replace=False)
+        neg[i] = np.random.choice(data_neg[u.item()], neg_num, replace=False)
     return neg
 
 def collate_test(data, user_neg):
@@ -310,43 +310,6 @@ def collate_test(data, user_neg):
         graph.append(da[0][0])
         label.append(da[1]['target'])
         last_item.append(da[1]['last_alis'])
-    return torch.tensor(user).long(), dgl.batch(graph), torch.tensor(label).long(), torch.tensor(last_item).long(), torch.Tensor(neg_generate(user, user_neg)).long()
 
-def order_update(edges):
-    dic = {}
-    dic['order'] = torch.argsort(torch.argsort(edges.data['time']))[1]
-    dic['re_order'] = len(edges.data['time']) - dic['order'] - 1
-    return dic
-
-def collate(data):
-    user = []
-    user_l = []
-    graph = []
-    label = []
-    last_item = []
-    for da in data:
-        user.append(da[1]['user'])
-        user_l.append(da[1]['u_alis'])
-        graph.append(da[0][0])
-        label.append(da[1]['target'])
-        last_item.append(da[1]['last_alis'])
-    return torch.tensor(user_l).long(), dgl.batch(graph), torch.tensor(label).long(), torch.tensor(last_item).long()
-
-def neg_generate(user, data_neg, neg_num=100):
-    neg = np.zeros((len(user), neg_num), np.int32)
-    for i, u in enumerate(user):
-        neg[i] = np.random.choice(data_neg[u], neg_num, replace=False)
-    return neg
-
-def collate_test(data, user_neg):
-    user = []
-    graph = []
-    label = []
-    last_item = []
-    for da in data:
-        user.append(da[1]['u_alis'])
-        graph.append(da[0][0])
-        label.append(da[1]['target'])
-        last_item.append(da[1]['last_alis'])
     return torch.tensor(user).long(), dgl.batch(graph), torch.tensor(label).long(), torch.tensor(last_item).long(), torch.Tensor(neg_generate(user, user_neg)).long()
 
